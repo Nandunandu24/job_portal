@@ -1,4 +1,3 @@
-
 export enum ProjectStatus {
   NOT_STARTED = 'Not Started',
   IN_PROGRESS = 'In Progress',
@@ -24,6 +23,15 @@ export type JobMode = 'Remote' | 'Hybrid' | 'Onsite';
 export type JobExperience = 'Fresher' | '0-1' | '1-3' | '3-5';
 export type JobSource = 'LinkedIn' | 'Naukri' | 'Indeed';
 
+export interface UserPreferences {
+  roleKeywords: string[];
+  preferredLocations: string[];
+  preferredMode: JobMode[];
+  experienceLevel: JobExperience;
+  skills: string[];
+  minMatchScore: number;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -37,4 +45,5 @@ export interface Job {
   salaryRange: string;
   applyUrl: string;
   description: string;
+  matchScore?: number;
 }

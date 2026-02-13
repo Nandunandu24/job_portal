@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Job } from '../types';
 import { Card, Button, Badge } from './Common';
@@ -17,14 +16,26 @@ const JobCard: React.FC<JobCardProps> = ({ job, onView, onSave, isSaved }) => {
     return `${days} days ago`;
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-kod-success/10 text-kod-success border-kod-success/30';
+    if (score >= 60) return 'bg-kod-warning/10 text-kod-warning border-kod-warning/30';
+    if (score >= 40) return 'bg-kod-primary/5 text-kod-primary border-kod-border';
+    return 'bg-kod-primary/[0.02] text-kod-primary/40 border-kod-border/30';
+  };
+
   return (
     <Card className="flex flex-col h-full hover:border-kod-primary transition-premium group relative">
-      <div className="absolute top-16 right-16">
+      <div className="absolute top-16 right-16 flex flex-col items-end gap-8">
         <Badge>{job.source}</Badge>
+        {job.matchScore !== undefined && (
+          <div className={`px-8 py-4 text-[10px] font-bold border ${getScoreColor(job.matchScore)} transition-colors duration-200`}>
+            {job.matchScore}% MATCH
+          </div>
+        )}
       </div>
 
       <div className="mb-16">
-        <h3 className="text-lg font-semibold text-kod-primary group-hover:text-kod-accent transition-colors duration-200 leading-snug pr-40">
+        <h3 className="text-lg font-semibold text-kod-primary group-hover:text-kod-accent transition-colors duration-200 leading-snug pr-64">
           {job.title}
         </h3>
         <p className="text-sm font-medium opacity-60">{job.company}</p>
