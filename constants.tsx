@@ -21,7 +21,49 @@ export const INITIAL_STEPS: BuildStep[] = [
     title: "Configure Design System",
     description: "Initialize the KodNest visual language, ensuring all components adhere to the strict 4-color palette.",
     prompt: "Create a Tailwind configuration that implements a 4-color limited palette and a fixed 8px grid system.",
-    isCompleted: false
+    isCompleted: true
+  },
+  {
+    id: 3,
+    title: "Core Job Engine",
+    description: "Build the underlying logic for parsing and managing job entities with consistent data structures.",
+    prompt: "Implement a data management layer for job listings with localStorage persistence.",
+    isCompleted: true
+  },
+  {
+    id: 4,
+    title: "Match Scoring Logic",
+    description: "Develop the deterministic scoring algorithm for weighing candidate-to-job relevance.",
+    prompt: "Create a weighted scoring function based on skills, role keywords, and experience levels.",
+    isCompleted: true
+  },
+  {
+    id: 5,
+    title: "Status Persistence",
+    description: "Ensure job application states (Applied, Rejected, Selected) persist across sessions.",
+    prompt: "Add status tracking to job cards and link to global state management.",
+    isCompleted: true
+  },
+  {
+    id: 6,
+    title: "Daily Digest Simulation",
+    description: "Automate the 9AM briefing generation logic for prioritized matching.",
+    prompt: "Implement a daily digest generator that picks top 10 relevant roles based on user score.",
+    isCompleted: true
+  },
+  {
+    id: 7,
+    title: "Test Suite Implementation",
+    description: "Configure a 10-point validation checklist to enforce product quality.",
+    prompt: "Build an internal test runner to verify UI and business logic integrity.",
+    isCompleted: true
+  },
+  {
+    id: 8,
+    title: "Final Submission Protocol",
+    description: "Establish artifact collection and shipment rules for the production launch.",
+    prompt: "Finalize the proof collection page and validation rules for project shipping.",
+    isCompleted: true
   }
 ];
 
