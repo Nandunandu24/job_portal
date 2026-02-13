@@ -1,5 +1,5 @@
 
-import { ProjectStatus, BuildStep, ProofItem } from './types';
+import { ProjectStatus, BuildStep, ProofItem, Job } from './types';
 
 export const SPACING = {
   S: '8px',
@@ -32,3 +32,71 @@ export const INITIAL_PROOF_CHECKLIST: ProofItem[] = [
   { id: 'test-passed', label: 'Test Passed', completed: false, proofValue: '' },
   { id: 'deployed', label: 'Deployed', completed: false, proofValue: '' },
 ];
+
+const indianCompanies = [
+  'Infosys', 'TCS', 'Wipro', 'Accenture', 'Capgemini', 'Cognizant', 'IBM', 'Oracle', 'SAP', 'Dell',
+  'Amazon', 'Flipkart', 'Swiggy', 'Razorpay', 'PhonePe', 'Paytm', 'Zoho', 'Freshworks', 'Juspay', 'CRED',
+  'Zomato', 'Ola Electric', 'Postman', 'BrowserStack', 'Unacademy', 'Groww', 'Nykaa', 'Lenskart', 'PhysicsWallah', 'Delhivery'
+];
+
+const locations = ['Bangalore', 'Hyderabad', 'Pune', 'Chennai', 'Mumbai', 'Gurgaon', 'Noida', 'Remote'];
+
+const roles = [
+  { title: 'SDE Intern', exp: 'Fresher', salary: '₹30k–₹45k/month Internship' },
+  { title: 'Graduate Engineer Trainee', exp: 'Fresher', salary: '3.5–5.5 LPA' },
+  { title: 'Junior Backend Developer', exp: '0-1', salary: '8–12 LPA' },
+  { title: 'Frontend Intern', exp: 'Fresher', salary: '₹20k–₹35k/month Internship' },
+  { title: 'QA Intern', exp: 'Fresher', salary: '₹15k–₹25k/month Internship' },
+  { title: 'Data Analyst Intern', exp: 'Fresher', salary: '₹25k–₹40k/month Internship' },
+  { title: 'Java Developer', exp: '0-1', salary: '6–10 LPA' },
+  { title: 'Python Developer', exp: 'Fresher', salary: '4–7 LPA' },
+  { title: 'React Developer', exp: '1-3', salary: '10–18 LPA' },
+  { title: 'Node.js Developer', exp: '1-3', salary: '12–20 LPA' },
+  { title: 'Mobile Developer', exp: '1-3', salary: '14–22 LPA' },
+  { title: 'Senior Backend Engineer', exp: '3-5', salary: '18–35 LPA' },
+  { title: 'Full Stack Engineer', exp: '3-5', salary: '22–45 LPA' }
+];
+
+const skillSets = [
+  ['React', 'TypeScript', 'Tailwind', 'Next.js'],
+  ['Node.js', 'PostgreSQL', 'Redis', 'Docker'],
+  ['Java', 'Spring Boot', 'Microservices', 'AWS'],
+  ['Python', 'Django', 'FastAPI', 'PostgreSQL'],
+  ['Android', 'Kotlin', 'MVVM', 'Retrofit'],
+  ['Flutter', 'Dart', 'Firebase', 'State Management'],
+  ['Selenium', 'Java', 'Cucumber', 'JMeter'],
+  ['SQL', 'Python', 'Tableau', 'Power BI'],
+  ['C++', 'Data Structures', 'Algorithms', 'System Design']
+];
+
+const descriptions = [
+  "Join our core engineering team to build scalable systems that handle millions of requests per second. You will be working on high-performance APIs and distributed storage solutions. We value clean code and robust architecture.",
+  "We are looking for a passionate developer who loves building intuitive user experiences. You will collaborate closely with designers to implement pixel-perfect interfaces. Experience with modern frontend frameworks is essential.",
+  "As a member of our data team, you will help us extract meaningful insights from massive datasets. Your work will directly impact product decisions and business growth. Proficiency in SQL and data visualization is required.",
+  "Help us ensure the highest quality of our mobile and web applications. You will create automated test suites and participate in rigorous code reviews. A keen eye for detail and strong problem-solving skills are a must.",
+  "Work in a fast-paced environment where innovation is key. You will take ownership of end-to-end features and deploy code daily. We offer a collaborative culture with plenty of opportunities for mentorship and growth.",
+  "Be part of the digital transformation journey for our global clients. You will build enterprise-grade applications using the latest tech stacks. Excellent communication and teamwork skills are vital for this role."
+];
+
+export const JOBS_DATA: Job[] = Array.from({ length: 60 }).map((_, i) => {
+  const company = indianCompanies[i % indianCompanies.length];
+  const location = locations[i % locations.length];
+  const roleInfo = roles[i % roles.length];
+  const mode: ('Remote' | 'Hybrid' | 'Onsite')[] = ['Remote', 'Hybrid', 'Onsite'];
+  const sources: ('LinkedIn' | 'Naukri' | 'Indeed')[] = ['LinkedIn', 'Naukri', 'Indeed'];
+  
+  return {
+    id: `job-${i + 1}`,
+    title: roleInfo.title,
+    company: company,
+    location: location,
+    mode: mode[i % mode.length],
+    experience: roleInfo.exp as any,
+    skills: skillSets[i % skillSets.length],
+    source: sources[i % sources.length],
+    postedDaysAgo: Math.floor(Math.random() * 11),
+    salaryRange: roleInfo.salary,
+    applyUrl: `https://careers.${company.toLowerCase().replace(/\s+/g, '')}.com/jobs/${i + 100}`,
+    description: descriptions[i % descriptions.length]
+  };
+});
