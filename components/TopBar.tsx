@@ -23,7 +23,7 @@ const TopBar: React.FC<TopBarProps> = ({ projectName, currentRoute, onNavigate, 
 
   return (
     <nav className="fixed top-0 left-0 right-0 h-64 bg-white border-b border-kod-border z-50 flex items-center justify-between px-24">
-      {/* Left: Project Name */}
+      {/* Left: Project Name (Links to Landing Page) */}
       <div 
         className="flex-1 text-sm font-semibold uppercase tracking-widest text-kod-primary cursor-pointer hover:text-kod-accent transition-colors"
         onClick={() => onNavigate('/')}
