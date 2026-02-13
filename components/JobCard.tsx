@@ -1,15 +1,17 @@
 import React from 'react';
-import { Job } from '../types';
+import { Job, JobStatus } from '../types';
 import { Card, Button, Badge } from './Common';
 
 interface JobCardProps {
   job: Job;
+  status: JobStatus;
   onView: (job: Job) => void;
   onSave: (job: Job) => void;
+  onStatusChange: (jobId: string, status: JobStatus) => void;
   isSaved: boolean;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, onView, onSave, isSaved }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, status, onView, onSave, onStatusChange, isSaved }) => {
   const getRelativeTime = (days: number) => {
     if (days === 0) return 'Today';
     if (days === 1) return '1 day ago';
@@ -21,6 +23,15 @@ const JobCard: React.FC<JobCardProps> = ({ job, onView, onSave, isSaved }) => {
     if (score >= 60) return 'bg-kod-warning/10 text-kod-warning border-kod-warning/30';
     if (score >= 40) return 'bg-kod-primary/5 text-kod-primary border-kod-border';
     return 'bg-kod-primary/[0.02] text-kod-primary/40 border-kod-border/30';
+  };
+
+  const getStatusBadgeStyles = (s: JobStatus) => {
+    switch (s) {
+      case 'Applied': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Rejected': return 'bg-red-100 text-red-800 border-red-200';
+      case 'Selected': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-kod-bg text-kod-primary border-kod-border opacity-50';
+    }
   };
 
   return (
@@ -35,6 +46,9 @@ const JobCard: React.FC<JobCardProps> = ({ job, onView, onSave, isSaved }) => {
       </div>
 
       <div className="mb-16">
+        <div className={`inline-block px-8 py-2 text-[9px] font-bold uppercase tracking-widest border mb-8 ${getStatusBadgeStyles(status)}`}>
+          {status}
+        </div>
         <h3 className="text-lg font-semibold text-kod-primary group-hover:text-kod-accent transition-colors duration-200 leading-snug pr-64">
           {job.title}
         </h3>
@@ -61,6 +75,21 @@ const JobCard: React.FC<JobCardProps> = ({ job, onView, onSave, isSaved }) => {
       </div>
 
       <div className="mt-auto pt-20 border-t border-kod-border/30">
+        <div className="flex flex-wrap gap-4 mb-16">
+          {(['Not Applied', 'Applied', 'Rejected', 'Selected'] as JobStatus[]).map((s) => (
+            <button
+              key={s}
+              onClick={() => onStatusChange(job.id, s)}
+              className={`text-[9px] font-bold uppercase tracking-widest px-8 py-4 border transition-all duration-200 ${
+                status === s 
+                  ? 'bg-kod-primary text-white border-kod-primary' 
+                  : 'bg-transparent text-kod-primary opacity-40 hover:opacity-100 border-kod-border'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-8 mb-12">
           <Button variant="secondary" className="flex-1 py-8 text-[11px] uppercase tracking-wider h-auto" onClick={() => onView(job)}>
             View

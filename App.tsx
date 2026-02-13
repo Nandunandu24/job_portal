@@ -1,5 +1,6 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { ProjectStatus, ProofItem, Job, UserPreferences, JobMode, JobExperience } from './types';
+import { ProjectStatus, ProofItem, Job, UserPreferences, JobMode, JobExperience, JobStatus, StatusRecord } from './types';
 import { INITIAL_PROOF_CHECKLIST, JOBS_DATA } from './constants';
 import TopBar from './components/TopBar';
 import ContextHeader from './components/ContextHeader';
@@ -36,6 +37,7 @@ const App: React.FC = () => {
   });
 
   const [proofItems, setProofItems] = useState<ProofItem[]>(INITIAL_PROOF_CHECKLIST);
+  
   const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
     const saved = safeGetItem('kodnest_saved_jobs');
     if (!saved) return [];
@@ -44,6 +46,16 @@ const App: React.FC = () => {
       return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
+    }
+  });
+
+  const [jobStatuses, setJobStatuses] = useState<Record<string, StatusRecord>>(() => {
+    const saved = safeGetItem('jobTrackerStatus');
+    if (!saved) return {};
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return {};
     }
   });
 
@@ -69,12 +81,20 @@ const App: React.FC = () => {
     }
   });
 
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+
+  const showToast = (message: string) => {
+    setToast({ message, visible: true });
+    setTimeout(() => setToast({ message: '', visible: false }), 3000);
+  };
+
   // UI state for Dashboard
   const [search, setSearch] = useState('');
   const [filterLocation, setFilterLocation] = useState('All');
   const [filterMode, setFilterMode] = useState('All');
   const [filterExp, setFilterExp] = useState('All');
   const [filterSource, setFilterSource] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
   const [sortBy, setSortBy] = useState('Latest');
   const [showMatchesOnly, setShowMatchesOnly] = useState(false);
 
@@ -95,6 +115,10 @@ const App: React.FC = () => {
   useEffect(() => {
     safeSetItem('kodnest_saved_jobs', JSON.stringify(savedJobIds));
   }, [savedJobIds]);
+
+  useEffect(() => {
+    safeSetItem('jobTrackerStatus', JSON.stringify(jobStatuses));
+  }, [jobStatuses]);
 
   const handleToggleProof = useCallback((id: string) => {
     setProofItems(prev => prev.map(item => 
@@ -122,6 +146,14 @@ const App: React.FC = () => {
     setSavedJobIds(prev => 
       prev.includes(job.id) ? prev.filter(id => id !== job.id) : [...prev, job.id]
     );
+  };
+
+  const handleStatusChange = (jobId: string, status: JobStatus) => {
+    setJobStatuses(prev => ({
+      ...prev,
+      [jobId]: { status, timestamp: new Date().toISOString() }
+    }));
+    showToast(`Status updated: ${status}`);
   };
 
   const handleSavePreferences = (prefs: UserPreferences) => {
@@ -175,7 +207,6 @@ const App: React.FC = () => {
     ).join('\n\n');
     try {
       await navigator.clipboard.writeText(`My 9AM Job Digest - ${todayStr}\n\n${text}`);
-      console.log('Digest copied to clipboard');
     } catch (err) {
       console.error('Failed to copy digest', err);
     }
@@ -198,8 +229,11 @@ const App: React.FC = () => {
       const matchMode = filterMode === 'All' || job.mode === filterMode;
       const matchExp = filterExp === 'All' || job.experience === filterExp;
       const matchSrc = filterSource === 'All' || job.source === filterSource;
+      const currentStatus = jobStatuses[job.id]?.status || 'Not Applied';
+      const matchStatus = filterStatus === 'All' || currentStatus === filterStatus;
       const matchThreshold = !showMatchesOnly || (job.matchScore !== undefined && job.matchScore >= (preferences?.minMatchScore || 0));
-      return matchSearch && matchLoc && matchMode && matchExp && matchSrc && matchThreshold;
+      
+      return matchSearch && matchLoc && matchMode && matchExp && matchSrc && matchStatus && matchThreshold;
     });
     if (sortBy === 'Latest') result.sort((a, b) => a.postedDaysAgo - b.postedDaysAgo);
     else if (sortBy === 'Oldest') result.sort((a, b) => b.postedDaysAgo - a.postedDaysAgo);
@@ -212,11 +246,24 @@ const App: React.FC = () => {
       result.sort((a, b) => getMinSalary(b.salaryRange) - getMinSalary(a.salaryRange));
     }
     return result;
-  }, [processedJobs, search, filterLocation, filterMode, filterExp, filterSource, sortBy, showMatchesOnly, preferences]);
+  }, [processedJobs, search, filterLocation, filterMode, filterExp, filterSource, filterStatus, sortBy, showMatchesOnly, preferences, jobStatuses]);
 
   const savedJobsList = useMemo(() => {
     return processedJobs.filter(j => savedJobIds.includes(j.id));
   }, [processedJobs, savedJobIds]);
+
+  const recentStatusUpdates = useMemo(() => {
+    return Object.entries(jobStatuses)
+      .map(([jobId, record]) => {
+        const job = JOBS_DATA.find(j => j.id === jobId);
+        // Fix for "Spread types may only be created from object types" error
+        // Using Object.assign to merge properties to avoid spread operator limitations with certain TypeScript types/versions
+        return job ? Object.assign({}, job, record) as (Job & StatusRecord) : null;
+      })
+      // Added safety check for null and ensuring the status property exists before access
+      .filter((x): x is (Job & StatusRecord) => !!x && x.status !== 'Not Applied')
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [jobStatuses]);
 
   // --- Views ---
 
@@ -241,10 +288,11 @@ const App: React.FC = () => {
     const modes = ['All', 'Remote', 'Hybrid', 'Onsite'];
     const exps = ['All', 'Fresher', '0-1', '1-3', '3-5'];
     const sources = ['All', 'LinkedIn', 'Naukri', 'Indeed'];
+    const statuses = ['All', 'Not Applied', 'Applied', 'Rejected', 'Selected'];
     return (
-      <Card className="mb-40 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-12 p-16 sticky top-[64px] z-30 shadow-sm border-t-0 bg-white/95 backdrop-blur-md">
-        <div className="lg:col-span-2">
-          <Input placeholder="Search role or company..." value={search} onChange={(e) => setSearch(e.target.value)} className="py-10 text-xs" />
+      <Card className="mb-40 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-12 p-16 sticky top-[64px] z-30 shadow-sm border-t-0 bg-white/95 backdrop-blur-md">
+        <div className="lg:col-span-1">
+          <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="py-10 text-xs" />
         </div>
         <select className="bg-kod-bg border border-kod-border px-8 py-10 text-[11px] font-bold uppercase tracking-wider focus:outline-none focus:border-kod-primary" value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)}>
           {locations.map(l => <option key={l} value={l}>{l === 'All' ? 'Location: All' : l}</option>)}
@@ -257,6 +305,9 @@ const App: React.FC = () => {
         </select>
         <select className="bg-kod-bg border border-kod-border px-8 py-10 text-[11px] font-bold uppercase tracking-wider focus:outline-none focus:border-kod-primary" value={filterSource} onChange={(e) => setFilterSource(e.target.value)}>
           {sources.map(s => <option key={s} value={s}>{s === 'All' ? 'Source: All' : s}</option>)}
+        </select>
+        <select className="bg-kod-bg border border-kod-border px-8 py-10 text-[11px] font-bold uppercase tracking-wider focus:outline-none focus:border-kod-primary" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          {statuses.map(s => <option key={s} value={s}>{s === 'All' ? 'Status: All' : s}</option>)}
         </select>
         <select className="bg-kod-bg border border-kod-border px-8 py-10 text-[11px] font-bold uppercase tracking-wider focus:outline-none focus:border-kod-primary" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
           <option value="Latest">Latest</option>
@@ -291,7 +342,15 @@ const App: React.FC = () => {
           {filteredJobs.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-24">
               {filteredJobs.map(job => (
-                <JobCard key={job.id} job={job} onView={setSelectedJob} onSave={handleSaveJob} isSaved={savedJobIds.includes(job.id)} />
+                <JobCard 
+                  key={job.id} 
+                  job={job} 
+                  status={jobStatuses[job.id]?.status || 'Not Applied'}
+                  onView={setSelectedJob} 
+                  onSave={handleSaveJob} 
+                  onStatusChange={handleStatusChange}
+                  isSaved={savedJobIds.includes(job.id)} 
+                />
               ))}
             </div>
           ) : (
@@ -330,7 +389,7 @@ const App: React.FC = () => {
         </Card>
       ) : (
         <div className="flex flex-col md:flex-row gap-40">
-          <div className="w-full md:w-[70%]">
+          <div className="w-full md:w-[70%] flex flex-col gap-24">
             <Card className="bg-white p-0 overflow-hidden shadow-sm">
               <div className="bg-kod-bg p-40 border-b border-kod-border">
                 <h2 className="text-2xl serif-heading mb-8">Top 10 Jobs For You — 9AM Digest</h2>
@@ -355,17 +414,38 @@ const App: React.FC = () => {
                     <Button variant="primary" onClick={() => window.open(job.applyUrl, '_blank')} className="py-10 px-24 text-[11px] uppercase tracking-wider h-auto self-start md:self-center">Apply Now</Button>
                   </div>
                 ))}
-                {todayDigest.length === 0 && (
-                  <p className="text-center opacity-40 italic py-24">No matching roles today. Check again tomorrow.</p>
-                )}
               </div>
               <div className="bg-kod-bg/50 p-24 text-center border-t border-kod-border">
                 <p className="text-[10px] opacity-40 uppercase tracking-widest font-bold">This digest was generated based on your preferences.</p>
-                <button onClick={() => setTodayDigest(null)} className="mt-8 text-[10px] text-kod-accent underline uppercase tracking-widest font-bold">Regenerate (Simulated)</button>
               </div>
             </Card>
+
+            <Card className="p-40">
+              <h3 className="text-xl serif-heading mb-24">Recent Status Updates</h3>
+              {recentStatusUpdates.length > 0 ? (
+                <div className="space-y-16">
+                  {recentStatusUpdates.slice(0, 5).map(record => (
+                    <div key={record.id} className="flex justify-between items-center py-12 border-b border-kod-border last:border-0">
+                      <div>
+                        <h4 className="text-sm font-semibold">{record.title}</h4>
+                        <p className="text-xs opacity-50">{record.company} • {new Date(record.timestamp).toLocaleDateString()}</p>
+                      </div>
+                      <div className={`px-8 py-4 text-[9px] font-bold uppercase tracking-widest border ${
+                        record.status === 'Applied' ? 'bg-blue-50 border-blue-200 text-blue-800' :
+                        record.status === 'Rejected' ? 'bg-red-50 border-red-200 text-red-800' :
+                        'bg-green-50 border-green-200 text-green-800'
+                      }`}>
+                        {record.status}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm opacity-40 italic">No status updates logged yet.</p>
+              )}
+            </Card>
           </div>
-          <SecondaryPanel title="Digest Logic" description="We prioritize jobs with the highest match score posted within the last 48 hours. A maximum of 10 roles are selected to avoid information fatigue." />
+          <SecondaryPanel title="Digest Logic" description="We prioritize jobs with the highest match score posted within the last 48 hours. Recent status changes are logged for your personal audit trail." />
         </div>
       )}
     </div>
@@ -379,7 +459,15 @@ const App: React.FC = () => {
           {savedJobsList.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-24">
               {savedJobsList.map(job => (
-                <JobCard key={job.id} job={job} onView={setSelectedJob} onSave={handleSaveJob} isSaved={true} />
+                <JobCard 
+                  key={job.id} 
+                  job={job} 
+                  status={jobStatuses[job.id]?.status || 'Not Applied'}
+                  onView={setSelectedJob} 
+                  onSave={handleSaveJob} 
+                  onStatusChange={handleStatusChange}
+                  isSaved={true} 
+                />
               ))}
             </div>
           ) : (
@@ -522,7 +610,16 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-kod-bg selection:bg-kod-accent selection:text-white pb-[140px] transition-premium">
       <TopBar projectName="Job Tracker" currentRoute={currentRoute} onNavigate={navigate} status={proofItems.every(p => p.completed) ? ProjectStatus.SHIPPED : ProjectStatus.IN_PROGRESS} />
+      
       <main className="max-w-[1400px] mx-auto px-24 pt-24">{renderContent()}</main>
+
+      {/* Toast Notification */}
+      {toast.visible && (
+        <div className="fixed top-80 right-24 bg-kod-primary text-white px-24 py-12 text-xs font-bold uppercase tracking-widest z-[100] shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
+          {toast.message}
+        </div>
+      )}
+
       <JobModal job={selectedJob} onClose={() => setSelectedJob(null)} />
       <ProofFooter items={proofItems} onToggle={handleToggleProof} onProofChange={handleProofChange} />
     </div>

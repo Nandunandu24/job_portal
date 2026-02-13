@@ -22,6 +22,12 @@ export interface ProofItem {
 export type JobMode = 'Remote' | 'Hybrid' | 'Onsite';
 export type JobExperience = 'Fresher' | '0-1' | '1-3' | '3-5';
 export type JobSource = 'LinkedIn' | 'Naukri' | 'Indeed';
+export type JobStatus = 'Not Applied' | 'Applied' | 'Rejected' | 'Selected';
+
+export interface StatusRecord {
+  status: JobStatus;
+  timestamp: string;
+}
 
 export interface UserPreferences {
   roleKeywords: string[];
