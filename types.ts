@@ -19,6 +19,13 @@ export interface ProofItem {
   proofValue: string;
 }
 
+export interface TestItem {
+  id: string;
+  label: string;
+  howToTest: string;
+  passed: boolean;
+}
+
 export type JobMode = 'Remote' | 'Hybrid' | 'Onsite';
 export type JobExperience = 'Fresher' | '0-1' | '1-3' | '3-5';
 export type JobSource = 'LinkedIn' | 'Naukri' | 'Indeed';

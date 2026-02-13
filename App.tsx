@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { ProjectStatus, ProofItem, Job, UserPreferences, JobMode, JobExperience, JobStatus, StatusRecord } from './types';
-import { INITIAL_PROOF_CHECKLIST, JOBS_DATA } from './constants';
+import { ProjectStatus, ProofItem, Job, UserPreferences, JobMode, JobExperience, JobStatus, StatusRecord, TestItem } from './types';
+import { INITIAL_PROOF_CHECKLIST, INITIAL_TEST_CHECKLIST, JOBS_DATA } from './constants';
 import TopBar from './components/TopBar';
 import ContextHeader from './components/ContextHeader';
 import ProofFooter from './components/ProofFooter';
@@ -37,6 +36,15 @@ const App: React.FC = () => {
   });
 
   const [proofItems, setProofItems] = useState<ProofItem[]>(INITIAL_PROOF_CHECKLIST);
+  const [testItems, setTestItems] = useState<TestItem[]>(() => {
+    const saved = safeGetItem('kodnest_test_checklist');
+    if (!saved) return INITIAL_TEST_CHECKLIST;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return INITIAL_TEST_CHECKLIST;
+    }
+  });
   
   const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
     const saved = safeGetItem('kodnest_saved_jobs');
@@ -120,6 +128,10 @@ const App: React.FC = () => {
     safeSetItem('jobTrackerStatus', JSON.stringify(jobStatuses));
   }, [jobStatuses]);
 
+  useEffect(() => {
+    safeSetItem('kodnest_test_checklist', JSON.stringify(testItems));
+  }, [testItems]);
+
   const handleToggleProof = useCallback((id: string) => {
     setProofItems(prev => prev.map(item => 
       item.id === id ? { ...item, completed: !item.completed } : item
@@ -130,6 +142,17 @@ const App: React.FC = () => {
     setProofItems(prev => prev.map(item => 
       item.id === id ? { ...item, proofValue: value } : item
     ));
+  }, []);
+
+  const handleToggleTest = useCallback((id: string) => {
+    setTestItems(prev => prev.map(item => 
+      item.id === id ? { ...item, passed: !item.passed } : item
+    ));
+  }, []);
+
+  const handleResetTests = useCallback(() => {
+    setTestItems(INITIAL_TEST_CHECKLIST);
+    showToast('Test status reset.');
   }, []);
 
   const navigate = (path: string) => {
@@ -264,6 +287,10 @@ const App: React.FC = () => {
       .filter((x): x is (Job & StatusRecord) => !!x && x.status !== 'Not Applied')
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [jobStatuses]);
+
+  const testsPassedCount = useMemo(() => testItems.filter(t => t.passed).length, [testItems]);
+  const allTestsPassed = testsPassedCount === 10;
+  const projectStatus = allTestsPassed ? ProjectStatus.SHIPPED : ProjectStatus.IN_PROGRESS;
 
   // --- Views ---
 
@@ -587,19 +614,68 @@ const App: React.FC = () => {
       case '/digest': return <DigestPage />;
       case '/proof': return (
         <div className="flex flex-col gap-40">
-          <ContextHeader title="Proof" subtitle="Artifact collection for development validation." />
+          <ContextHeader title="Validation & Proof" subtitle="Comprehensive test suite and build verification." />
           <div className="flex flex-col md:flex-row gap-40">
-            <div className="w-full md:w-[70%]">
+            <div className="w-full md:w-[70%] space-y-40">
+              <Card className="bg-white p-40">
+                <div className="flex justify-between items-center mb-32 border-b border-kod-border pb-24">
+                  <div>
+                    <h3 className="text-2xl serif-heading">Built-In Test Checklist</h3>
+                    <div className="flex items-center gap-12 mt-8">
+                      <span className="text-[11px] font-bold uppercase tracking-widest opacity-50">Tests Passed:</span>
+                      <span className={`text-sm font-bold ${allTestsPassed ? 'text-kod-success' : 'text-kod-accent'}`}>
+                        {testsPassedCount} / 10
+                      </span>
+                    </div>
+                  </div>
+                  <Button variant="secondary" onClick={handleResetTests} className="text-[10px] py-8 px-16 uppercase tracking-wider h-auto">Reset Test Status</Button>
+                </div>
+                
+                {!allTestsPassed && (
+                  <div className="bg-kod-accent/5 border border-kod-accent/20 p-16 mb-24">
+                    <p className="text-[11px] font-bold text-kod-accent uppercase tracking-widest">⚠️ Resolve all issues before shipping.</p>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  {testItems.map((test) => (
+                    <div key={test.id} className="group flex items-start gap-16 py-16 px-12 border-b border-kod-border/30 last:border-0 hover:bg-kod-bg/30 transition-colors">
+                      <button
+                        onClick={() => handleToggleTest(test.id)}
+                        className={`mt-4 w-20 h-20 border transition-all duration-200 flex items-center justify-center shrink-0 ${
+                          test.passed ? 'bg-kod-success border-kod-success text-white' : 'bg-transparent border-kod-primary opacity-40 group-hover:opacity-100'
+                        }`}
+                      >
+                        {test.passed && (
+                          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-medium transition-colors ${test.passed ? 'text-kod-success' : 'text-kod-primary'}`}>
+                          {test.label}
+                        </span>
+                        <div className="mt-4 flex items-center gap-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">How to test:</span>
+                          <span className="text-[10px] opacity-60 italic">{test.howToTest}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
               <Card className="bg-white p-40">
                 <h3 className="text-xl serif-heading mb-24">Artifact Collection</h3>
                 <div className="space-y-16 opacity-50">
-                  <p className="text-sm italic">Placeholder for artifacts and build signatures.</p>
+                  <p className="text-sm italic">Submit technical evidence for final review.</p>
                   <div className="h-40 w-full bg-kod-bg border border-kod-border/30 rounded-sm"></div>
                   <div className="h-40 w-3/4 bg-kod-bg border border-kod-border/30 rounded-sm"></div>
                 </div>
               </Card>
             </div>
-            <SecondaryPanel title="Compliance" description="Submit proof of work here to satisfy build requirements." />
+            <SecondaryPanel title="Ship Protocol" description="Deployment is locked until the test suite returns a 100% pass rate. This ensures zero regression in premium features." />
           </div>
         </div>
       );
@@ -609,7 +685,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-kod-bg selection:bg-kod-accent selection:text-white pb-[140px] transition-premium">
-      <TopBar projectName="Job Tracker" currentRoute={currentRoute} onNavigate={navigate} status={proofItems.every(p => p.completed) ? ProjectStatus.SHIPPED : ProjectStatus.IN_PROGRESS} />
+      <TopBar 
+        projectName="Job Tracker" 
+        currentRoute={currentRoute} 
+        onNavigate={navigate} 
+        status={projectStatus} 
+      />
       
       <main className="max-w-[1400px] mx-auto px-24 pt-24">{renderContent()}</main>
 

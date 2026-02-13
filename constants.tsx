@@ -1,5 +1,4 @@
-
-import { ProjectStatus, BuildStep, ProofItem, Job } from './types';
+import { ProjectStatus, BuildStep, ProofItem, Job, TestItem } from './types';
 
 export const SPACING = {
   S: '8px',
@@ -31,6 +30,19 @@ export const INITIAL_PROOF_CHECKLIST: ProofItem[] = [
   { id: 'logic-working', label: 'Logic Working', completed: false, proofValue: '' },
   { id: 'test-passed', label: 'Test Passed', completed: false, proofValue: '' },
   { id: 'deployed', label: 'Deployed', completed: false, proofValue: '' },
+];
+
+export const INITIAL_TEST_CHECKLIST: TestItem[] = [
+  { id: 't1', label: 'Preferences persist after refresh', howToTest: 'Change settings, refresh browser, and verify values remain.', passed: false },
+  { id: 't2', label: 'Match score calculates correctly', howToTest: 'Update skills in Settings and verify Match % changes on Dashboard.', passed: false },
+  { id: 't3', label: '"Show only matches" toggle works', howToTest: 'Toggle visibility and verify jobs below threshold disappear.', passed: false },
+  { id: 't4', label: 'Save job persists after refresh', howToTest: 'Save a job, refresh, and check the Saved tab.', passed: false },
+  { id: 't5', label: 'Apply opens in new tab', howToTest: 'Click Apply on any job card and verify a new tab opens.', passed: false },
+  { id: 't6', label: 'Status update persists after refresh', howToTest: 'Change status to "Applied", refresh, and verify badge color.', passed: false },
+  { id: 't7', label: 'Status filter works correctly', howToTest: 'Filter by "Applied" and verify only applied jobs show.', passed: false },
+  { id: 't8', label: 'Digest generates top 10 by score', howToTest: 'Generate digest and verify it lists top 10 relevant roles.', passed: false },
+  { id: 't9', label: 'Digest persists for the day', howToTest: 'Generate digest, refresh, and verify it stays generated.', passed: false },
+  { id: 't10', label: 'No console errors on main pages', howToTest: 'Open DevTools and browse all routes checking for red errors.', passed: false },
 ];
 
 const indianCompanies = [
